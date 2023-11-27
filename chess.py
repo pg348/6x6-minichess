@@ -9,15 +9,18 @@ ROWS, COLS = 6, 6
 SQUARE_SIZE = WIDTH // COLS
 DEPTH = 3
 
+
 class GameMode(Enum):
     USER_VS_USER = 1
     USER_VS_BOT = 2
     BOT_VS_BOT = 3
 
+
 # Define colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (169, 169, 169)
+
 
 def display_game_mode_menu():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -46,6 +49,8 @@ def display_game_mode_menu():
                     return selected_mode
 
         clock.tick(60)
+
+
 # Initialize pygame
 pygame.init()
 
@@ -287,7 +292,7 @@ def get_pawn_moves(board, row, col):
 
 def promote_pawn(board, row, col):
     # Display a promotion menu
-    promotion_options = ["Q", "R", "N", "B"]
+    promotion_options = ["Q", "R", "N"]
     selected_piece = promotion_menu()
 
     # Promote the pawn to the selected piece
@@ -301,10 +306,10 @@ def promote_pawn(board, row, col):
 
 
 def promotion_menu():
-    promotion_options = ["Q", "R", "N", "B"]
+    promotion_options = ["Queen", "Rook", "N"]
     images = {
-        "Q": white_queen_image,
-        "R": white_rook_image,
+        "Queen": white_queen_image,
+        "Rook": white_rook_image,
         "N": white_knight_image,
         # "B": white_bishop_image,  # Assuming you have a bishop image
     }
@@ -316,15 +321,34 @@ def promotion_menu():
     font = pygame.font.Font(None, 36)
     clock = pygame.time.Clock()
 
+    # Button dimensions
+    button_width = 200
+    button_height = 80
+    button_margin = 20
+
+    buttons = []
+    for i, option in enumerate(promotion_options):
+        button_rect = pygame.Rect(
+            120,
+            20 + i * (button_height + button_margin),
+            button_width,
+            button_height,
+        )
+        buttons.append((button_rect, option))
+
     # Display promotion options
     while True:
         screen.fill((255, 255, 255))
 
-        for i, option in enumerate(["Q (Queen)", "R (Rook)", "N (Knight)"]):
+        for button_rect, option in buttons:
+            pygame.draw.rect(screen, (200, 200, 200), button_rect)
             text = font.render(option, True, (0, 0, 0))
-            screen.blit(text, (120, 20 + i * 110))
-            image = images[promotion_options[i]]
-            screen.blit(image, (300, 10 + i * 90))
+            text_rect = text.get_rect(center=button_rect.center)
+            screen.blit(text, text_rect)
+
+            image = images[option]
+            image_rect = image.get_rect(topleft=(button_rect.right + 20, button_rect.y))
+            screen.blit(image, image_rect)
 
         pygame.display.flip()
 
@@ -335,9 +359,9 @@ def promotion_menu():
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
-                if 50 < x < 250:
-                    selected_piece = promotion_options[(y - 10) // 40]
-                    return selected_piece
+                for button_rect, selected_piece in buttons:
+                    if button_rect.collidepoint(x, y):
+                        return selected_piece
 
         clock.tick(60)
 
@@ -623,7 +647,9 @@ def main():
                                 ai_from_square[0]
                             ][ai_from_square[1]]
                             chess_board[ai_from_square[0]][ai_from_square[1]] = " "
-                            current_player = "w" if current_player == "b" else "b"  # Switch turns for the bots
+                            current_player = (
+                                "w" if current_player == "b" else "b"
+                            )  # Switch turns for the bots
 
                     elif piece != " " and piece[0] == current_player[0]:
                         # Change the selected piece
@@ -644,7 +670,9 @@ def main():
                 ai_from_square[0]
             ][ai_from_square[1]]
             chess_board[ai_from_square[0]][ai_from_square[1]] = " "
-            current_player = "w" if current_player == "b" else "b"  # Switch turns for the bots
+            current_player = (
+                "w" if current_player == "b" else "b"
+            )  # Switch turns for the bots
 
         if is_check(chess_board, current_player[0]):
             print(f"{current_player.upper()} is in CHECK!")
@@ -669,6 +697,7 @@ def main():
 
         pygame.display.flip()
         pygame.time.Clock().tick(60)
+
 
 if __name__ == "__main__":
     main()
