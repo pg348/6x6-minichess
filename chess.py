@@ -630,6 +630,17 @@ def main():
                     if (row, col) in get_valid_moves(
                         chess_board, selected_piece[0], selected_piece[1]
                     ):
+                        if (
+                            current_player == "w"
+                            and row == 0
+                            and chess_board[selected_piece[0]][selected_piece[1]][
+                                1
+                            ].lower()
+                            == "p"
+                        ):
+                            promote_pawn(
+                                chess_board, selected_piece[0], selected_piece[1]
+                            )
                         # Perform the move
                         chess_board[row][col] = chess_board[selected_piece[0]][
                             selected_piece[1]
@@ -658,10 +669,18 @@ def main():
                         # Cancel the selection if clicking on an empty space or opponent's piece
                         selected_piece = None
 
-        if current_player == "w" and selected_mode == GameMode.USER_VS_BOT:
-            if row == 0 and chess_board[row][col][1].lower() == "p":
-                # Pawn reached the opposite end for white
-                promote_pawn(chess_board, row, col)
+        # if current_player == "w" and selected_mode == GameMode.USER_VS_BOT:
+        #     if row == 0 and chess_board[row][col][1].lower() == "p":
+        #         # Pawn reached the opposite end for white
+        #         promote_pawn(chess_board, row, col)
+
+        # if (
+        #     selected_mode == GameMode.USER_VS_USER
+        #     and current_player == "w"
+        #     and row == 0
+        #     and chess_board[row][col][1].lower() == "p"
+        # ):
+        #     promote_pawn(chess_board, row, col)
 
         if current_player == "b" and selected_mode != GameMode.USER_VS_USER:
             # AI's turn for both players in bot vs bot
