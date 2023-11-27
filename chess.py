@@ -507,6 +507,20 @@ def is_checkmate(board, current_player):
                     if not is_check(new_board, current_player):
                         return False  # At least one move gets out of check
 
+    # Check if any opponent's piece can be captured to get out of check
+    opponent_player = "w" if current_player == "b" else "b"
+    for row in range(ROWS):
+        for col in range(COLS):
+            if board[row][col] != " " and board[row][col][0] == opponent_player:
+                moves = get_valid_moves(board, row, col)
+                for move in moves:
+                    # Simulate the move and check if it gets out of check
+                    new_board = copy.deepcopy(board)
+                    new_board[move[0]][move[1]] = new_board[row][col]
+                    new_board[row][col] = " "
+                    if not is_check(new_board, current_player):
+                        return False  # At least one move captures an opponent's piece and gets out of check
+
     return True  # No moves get out of check, so it's checkmate
 
 
