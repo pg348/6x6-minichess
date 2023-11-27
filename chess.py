@@ -1,6 +1,7 @@
 import pygame
 import sys
 import copy
+from enum import Enum
 
 # Define constants
 WIDTH, HEIGHT = 480, 480
@@ -8,11 +9,43 @@ ROWS, COLS = 6, 6
 SQUARE_SIZE = WIDTH // COLS
 DEPTH = 3
 
+class GameMode(Enum):
+    USER_VS_USER = 1
+    USER_VS_BOT = 2
+    BOT_VS_BOT = 3
+
 # Define colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (169, 169, 169)
 
+def display_game_mode_menu():
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Game Mode Selection")
+
+    font = pygame.font.Font(None, 36)
+    clock = pygame.time.Clock()
+
+    while True:
+        screen.fill((255, 255, 255))
+
+        for i, option in enumerate(["User vs User", "User vs Bot", "Bot vs Bot"]):
+            text = font.render(option, True, (0, 0, 0))
+            screen.blit(text, (50, 10 + i * 40))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = event.pos
+                if 50 < x < 250:
+                    selected_mode = GameMode((y - 10) // 40 + 1)
+                    return selected_mode
+
+        clock.tick(60)
 # Initialize pygame
 pygame.init()
 
@@ -531,7 +564,19 @@ def draw_check_status(screen, font, current_player, is_in_check):
 
 
 def main():
-    current_player = "w"  # 'w' for white, 'b' for black
+    selected_mode = display_game_mode_menu()
+    current_player = "w"  # Initialize outside the loop
+
+    if selected_mode == GameMode.USER_VS_USER:
+        # No additional setup needed for user vs user
+        pass
+    elif selected_mode == GameMode.USER_VS_BOT:
+        # If user chooses user vs bot, the second player will be the bot
+        pass
+    elif selected_mode == GameMode.BOT_VS_BOT:
+        # If user chooses bot vs bot, both players will be bots
+        pass
+
     selected_piece = None
     row, col = 0, 0
 
@@ -547,7 +592,7 @@ def main():
                 piece = chess_board[row][col]
 
                 if selected_piece is None:
-                    if piece != " " and piece[0] == current_player:
+                    if piece != " " and piece[0] == current_player[0]:
                         selected_piece = (row, col)
                 else:
                     if (row, col) in get_valid_moves(
@@ -563,34 +608,40 @@ def main():
                             "b" if current_player == "w" else "w"
                         )  # Switch turns
                         print(f"It is {current_player.upper()}'s turn.")
-                    elif piece != " " and piece[0] == current_player:
+                        if selected_mode != GameMode.USER_VS_USER:
+                            # AI's turn for both players in bot vs bot
+                            ai_from_square, ai_to_square = ai_make_move(chess_board)
+                            chess_board[ai_to_square[0]][ai_to_square[1]] = chess_board[
+                                ai_from_square[0]
+                            ][ai_from_square[1]]
+                            chess_board[ai_from_square[0]][ai_from_square[1]] = " "
+                            current_player = "w" if current_player == "b" else "b"  # Switch turns for the bots
+
+                    elif piece != " " and piece[0] == current_player[0]:
                         # Change the selected piece
                         selected_piece = (row, col)
                     else:
                         # Cancel the selection if clicking on an empty space or opponent's piece
                         selected_piece = None
-        if current_player == "w":
+
+        if current_player == "w" and selected_mode == GameMode.USER_VS_BOT:
             if row == 0 and chess_board[row][col][1].lower() == "p":
                 # Pawn reached the opposite end for white
                 promote_pawn(chess_board, row, col)
 
-        if current_player == "b":
-            if row == ROWS - 1 and chess_board[row][col][1].lower() == "p":
-                # Pawn reached the opposite end for black
-                promote_pawn(chess_board, row, col)
-        if current_player == "b":
-            # AI's turn
+        if current_player == "b" and selected_mode != GameMode.USER_VS_USER:
+            # AI's turn for both players in bot vs bot
             ai_from_square, ai_to_square = ai_make_move(chess_board)
             chess_board[ai_to_square[0]][ai_to_square[1]] = chess_board[
                 ai_from_square[0]
             ][ai_from_square[1]]
             chess_board[ai_from_square[0]][ai_from_square[1]] = " "
-            current_player = "w"  # Switch turns
+            current_player = "w" if current_player == "b" else "b"  # Switch turns for the bots
 
-        if is_check(chess_board, current_player):
+        if is_check(chess_board, current_player[0]):
             print(f"{current_player.upper()} is in CHECK!")
 
-        if is_checkmate(chess_board, current_player):
+        if is_checkmate(chess_board, current_player[0]):
             print(f"{current_player.upper()} is in CHECKMATE! Game Over.")
             show_popup(f"{current_player.upper()} is in CHECKMATE! Game Over.", BLACK)
             pygame.quit()
@@ -610,7 +661,6 @@ def main():
 
         pygame.display.flip()
         pygame.time.Clock().tick(60)
-
 
 if __name__ == "__main__":
     main()
