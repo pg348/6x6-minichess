@@ -16,6 +16,17 @@ GRAY = (169, 169, 169)
 # Initialize pygame
 pygame.init()
 
+def show_popup(message, text_color):
+    popup_font = pygame.font.Font(None, 36)
+    popup_text = popup_font.render(message, True, text_color)
+    popup_rect = popup_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+
+    pygame.draw.rect(screen, WHITE, (popup_rect.x - 10, popup_rect.y - 10, popup_rect.width + 20, popup_rect.height + 20))
+    screen.blit(popup_text, popup_rect.topleft)
+    pygame.display.flip()
+    pygame.time.delay(2000)  # Display the pop-up for 2 seconds
+     # Reset the caption
+
 # Create the chess board
 chess_board = [[" " for _ in range(COLS)] for _ in range(ROWS)]
 
@@ -34,6 +45,9 @@ original_black_queen_image = pygame.image.load(r"image\bQ.png")
 
 original_white_king_image = pygame.image.load(r"image\wK.png")
 original_black_king_image = pygame.image.load(r"image\bK.png")
+
+original_white_queen_image = pygame.image.load(r"image\wQ.png")
+original_black_queen_image = pygame.image.load(r"image\bQ.png")
 
 original_white_rook_image = pygame.image.load(r"image\wR.png")
 original_black_rook_image = pygame.image.load(r"image\bR.png")
@@ -56,6 +70,9 @@ black_king_image = pygame.transform.scale(original_black_king_image, piece_image
 
 white_rook_image = pygame.transform.scale(original_white_rook_image, piece_image_size)
 black_rook_image = pygame.transform.scale(original_black_rook_image, piece_image_size)
+
+white_queen_image = pygame.transform.scale(original_white_queen_image, piece_image_size)
+black_queen_image = pygame.transform.scale(original_black_queen_image, piece_image_size)
 
 white_knight_image = pygame.transform.scale(
     original_white_knight_image, piece_image_size
@@ -112,6 +129,7 @@ def minimax(board, depth, maximizing_player):
 
 def ai_make_move(board):
     valid_moves = []
+
     for row in range(ROWS):
         for col in range(COLS):
             piece = board[row][col]
@@ -121,11 +139,32 @@ def ai_make_move(board):
                     new_board = copy.deepcopy(board)
                     new_board[move[0]][move[1]] = new_board[row][col]
                     new_board[row][col] = " "
-                    score = minimax(new_board, DEPTH, False)
+                    # Evaluate the move by considering the captured piece's value
+                    score = evaluate_board(new_board) + piece_value(board[move[0]][move[1]])
                     valid_moves.append(((row, col), move, score))
 
     best_move = max(valid_moves, key=lambda x: x[2])
     return best_move[0], best_move[1]
+
+
+def piece_value(piece):
+    # Check if the piece is not an empty string
+    if piece != " ":
+        # Assign values to pieces for evaluation
+        if piece[1].lower() == "p":
+            return 1
+        elif piece[1].lower() == "r":
+            return 5
+        elif piece[1].lower() == "n":
+            return 3
+        elif piece[1].lower() == "b":
+            return 3
+        elif piece[1].lower() == "q":
+            return 9
+        elif piece[1].lower() == "k":
+            return 100  # King's value is high to prioritize keeping the king safe
+
+    return 0  # Default value for empty squares
 
 
 def draw_board():
@@ -171,9 +210,7 @@ def draw_board():
 
 def get_pawn_moves(board, row, col):
     moves = []
-    direction = (
-        1 if board[row][col][0] == "b" else -1
-    )  # Direction depends on the color of the pawn
+    direction = 1 if board[row][col][0] == "b" else -1  # Direction depends on the color of the pawn
 
     # Check one square ahead
     new_row = row + direction
@@ -181,25 +218,16 @@ def get_pawn_moves(board, row, col):
         moves.append((new_row, col))
 
         # If pawn is in its starting position, it can move two squares ahead
-        if ((row == 1 and direction == 1) or (row == 6 and direction == -1)) and board[
-            new_row + direction
-        ][col] == " ":
+        if ((row == 1 and direction == 1) or (row == 4 and direction == -1)) and board[new_row + direction][col] == " ":
             moves.append((new_row + direction, col))
 
     # Check diagonal captures
     for col_offset in [-1, 1]:
         new_col = col + col_offset
-        if (
-            0 <= new_row < ROWS
-            and 0 <= new_col < COLS
-            and board[new_row][new_col] != " "  # Check if the square is not empty
-            and board[new_row][new_col][0]
-            != board[row][col][0]  # Check if it's an enemy piece
-        ):
+        if 0 <= new_row < ROWS and 0 <= new_col < COLS and board[new_row][new_col] != " " and board[new_row][new_col][0] != board[row][col][0]:
             moves.append((new_row, new_col))
 
     return moves
-
 
 def promote_pawn(board, row, col):
     # Display a promotion menu
@@ -210,12 +238,16 @@ def promote_pawn(board, row, col):
     color = board[row][col][0]
     board[row][col] = color + selected_piece
 
+    # Update the display after promotion
+    draw_board()
+    pygame.display.flip()
+    pygame.time.delay(1000)
 
 def promotion_menu():
     promotion_options = ["Q", "R", "N", "B"]
 
     # Pygame setup for the promotion menu
-    screen = pygame.display.set_mode((300, 200))
+    screen = pygame.display.set_mode((300, len(promotion_options) * 40 + 20))
     pygame.display.set_caption("Promotion Menu")
 
     font = pygame.font.Font(None, 36)
@@ -229,7 +261,7 @@ def promotion_menu():
             ["Q (Queen)", "R (Rook)", "N (Knight)", "B (Bishop)"]
         ):
             text = font.render(option, True, (0, 0, 0))
-            screen.blit(text, (50, 50 + i * 40))
+            screen.blit(text, (50, 10 + i * 40))
 
         pygame.display.flip()
 
@@ -241,10 +273,11 @@ def promotion_menu():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
                 if 50 < x < 250:
-                    selected_piece = promotion_options[(y - 50) // 40]
+                    selected_piece = promotion_options[(y - 10) // 40]
                     return selected_piece
 
         clock.tick(60)
+
 
 
 def get_knight_moves(board, row, col):
@@ -365,13 +398,9 @@ def get_valid_moves(board, row, col):
 
     if piece[1].lower() == "p":
         moves = get_pawn_moves(board, row, col)
-        if (
-            row == 0 or row == ROWS - 1
-        ) and moves:  # Check if pawn reached the opposite end
-            promote_pawn(board, row, col)
-            # Update moves after promotion
-            piece_after_promotion = board[row][col]
-            moves = get_moves_after_promotion(board, row, col, piece_after_promotion)
+        if row == 0 or row == ROWS - 1:
+            # Check if pawn reached the opposite end
+            moves += get_moves_after_promotion(board, row, col, piece)
         return moves
     elif piece[1].lower() == "r":
         return get_rook_moves(board, row, col)
@@ -407,6 +436,8 @@ def get_moves_after_promotion(board, row, col, piece_after_promotion):
 
 
 def is_check(board, current_player):
+    king_position = None  # Initialize king_position here
+
     # Find the king's position for the current player
     for row in range(ROWS):
         for col in range(COLS):
@@ -425,6 +456,7 @@ def is_check(board, current_player):
                     return True
 
     return False
+
 
 
 def is_checkmate(board, current_player):
@@ -449,9 +481,12 @@ def is_checkmate(board, current_player):
     return True  # No moves get out of check, so it's checkmate
 
 
+# ... (previous code)
+
 def main():
     current_player = "w"  # 'w' for white, 'b' for black
     selected_piece = None
+    row, col = 0, 0
 
     while True:
         for event in pygame.event.get():
@@ -487,7 +522,15 @@ def main():
                     else:
                         # Cancel the selection if clicking on an empty space or opponent's piece
                         selected_piece = None
+        if current_player == "w":
+            if row == 0 and chess_board[row][col][1].lower() == "p":
+                # Pawn reached the opposite end for white
+                promote_pawn(chess_board, row, col)
 
+        if current_player == "b":
+            if row == ROWS - 1 and chess_board[row][col][1].lower() == "p":
+                # Pawn reached the opposite end for black
+                promote_pawn(chess_board, row, col)
         if current_player == "b":
             # AI's turn
             ai_from_square, ai_to_square = ai_make_move(chess_board)
@@ -501,7 +544,10 @@ def main():
             print(f"{current_player.upper()} is in CHECK!")
 
         if is_checkmate(chess_board, current_player):
-            print(f"{current_player.upper()} is in CHECKMATE!")
+            print(f"{current_player.upper()} is in CHECKMATE! Game Over.")
+            show_popup(f"{current_player.upper()} is in CHECKMATE! Game Over.", BLACK)
+            pygame.quit()
+            sys.exit()
 
         draw_board()
 
