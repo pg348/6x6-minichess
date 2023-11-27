@@ -269,6 +269,12 @@ def promote_pawn(board, row, col):
 
 def promotion_menu():
     promotion_options = ["Q", "R", "N", "B"]
+    images = {
+        "Q": white_queen_image,
+        "R": white_rook_image,
+        "N": white_knight_image,
+        # "B": white_bishop_image,  # Assuming you have a bishop image
+    }
 
     # Pygame setup for the promotion menu
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -283,7 +289,9 @@ def promotion_menu():
 
         for i, option in enumerate(["Q (Queen)", "R (Rook)", "N (Knight)"]):
             text = font.render(option, True, (0, 0, 0))
-            screen.blit(text, (50, 10 + i * 40))
+            screen.blit(text, (120, 20 + i * 110))
+            image = images[promotion_options[i]]
+            screen.blit(image, (300, 10 + i * 90))
 
         pygame.display.flip()
 
