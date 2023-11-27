@@ -510,10 +510,7 @@ def is_checkmate(board, current_player):
     return True  # No moves get out of check, so it's checkmate
 
 
-def draw_check_status(screen, font, current_player, is_in_check):
-    check_message = f"{current_player.upper()} is in CHECK!" if is_in_check else ""
-    text = font.render(check_message, True, (255, 0, 0))  # Red color for check message
-    screen.blit(text, (10, 10))
+# ... (previous code)
 
 
 def main():
